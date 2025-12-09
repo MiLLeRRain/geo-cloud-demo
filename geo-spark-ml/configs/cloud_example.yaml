@@ -1,0 +1,6 @@
+mode: cloud
+input_path: s3://my-geo-bucket/data/points.csv
+output_path: s3://my-geo-bucket/output/clustered_points
+reference_point:
+  lat: 34.0522
+  lon: -118.2437

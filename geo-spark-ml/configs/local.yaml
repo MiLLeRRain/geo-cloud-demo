@@ -1,0 +1,6 @@
+mode: local
+input_path: data/points_sample.csv
+output_path: output/clustered_points
+reference_point:
+  lat: 34.0522
+  lon: -118.2437

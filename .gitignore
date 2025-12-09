@@ -1,0 +1,7 @@
+prompts/
+geo-spark-ml/.venv/
+geo-spark-ml/__pycache__/
+geo-spark-ml/.pytest_cache/
+geo-spark-ml/output/
+*.pyc
+.DS_Store
