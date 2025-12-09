@@ -1,10 +1,16 @@
 import argparse
+import sys
+import os
 from pyspark.sql import SparkSession
 from geo_clustering.config import Config
 from geo_clustering.features import add_distance_feature
 from geo_clustering.clustering import run_kmeans
 
 def main():
+    # Ensure PySpark uses the same Python interpreter as the driver (this venv)
+    os.environ['PYSPARK_PYTHON'] = sys.executable
+    os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
+
     parser = argparse.ArgumentParser(description="Geo Spark ML Job")
     parser.add_argument("--config", required=True, help="Path to configuration file")
     args = parser.parse_args()
@@ -41,7 +47,16 @@ def main():
     # Save output if needed (optional for this demo, but good practice)
     if config.output_path:
         print(f"Saving results to {config.output_path}")
-        df_result.write.mode("overwrite").csv(config.output_path, header=True)
+        # On Windows without Hadoop/Winutils, Spark's write.csv fails.
+        # For this small demo, we can convert to Pandas and save locally to bypass this.
+        if os.name == 'nt' and 'HADOOP_HOME' not in os.environ:
+            print("Windows detected without HADOOP_HOME. Saving via Pandas to avoid winutils error.")
+            # Ensure output directory exists
+            os.makedirs(config.output_path, exist_ok=True)
+            output_file = os.path.join(config.output_path, "results.csv")
+            df_result.toPandas().to_csv(output_file, index=False)
+        else:
+            df_result.write.mode("overwrite").csv(config.output_path, header=True)
 
     spark.stop()
 
