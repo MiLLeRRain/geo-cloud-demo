@@ -21,4 +21,7 @@ COPY data/ data/
 
 ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 
-CMD ["python", "-m", "geo_clustering.main", "--config", "configs/local.yaml"]
+# Use ENTRYPOINT so we can pass arguments (like --input, --output) to the container
+ENTRYPOINT ["python", "-m", "geo_clustering.main"]
+# Default arguments if none provided
+CMD ["--config", "configs/local.yaml"]

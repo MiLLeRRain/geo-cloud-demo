@@ -1,5 +1,6 @@
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeans
+from pyspark.ml.evaluation import ClusteringEvaluator
 
 def run_kmeans(df, input_cols, k=3, prediction_col="cluster"):
     """
@@ -13,5 +14,13 @@ def run_kmeans(df, input_cols, k=3, prediction_col="cluster"):
     
     predictions = model.transform(df_vector)
     
-    # Drop the features vector column to keep output clean
-    return predictions.drop("features")
+    # Return predictions with features column (needed for evaluation)
+    return predictions
+
+def evaluate_clustering(predictions, prediction_col="cluster", features_col="features"):
+    """
+    Evaluates clustering quality using Silhouette score.
+    """
+    evaluator = ClusteringEvaluator(predictionCol=prediction_col, featuresCol=features_col, metricName="silhouette", distanceMeasure="squaredEuclidean")
+    silhouette = evaluator.evaluate(predictions)
+    return silhouette
