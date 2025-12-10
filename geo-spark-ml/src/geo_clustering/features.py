@@ -26,3 +26,9 @@ def add_distance_feature(df, ref_lat, ref_lon, lat_col="lat", lon_col="lon", out
     distance_udf = F.udf(lambda lat, lon: haversine_distance(lat, lon, ref_lat, ref_lon), DoubleType())
     
     return df.withColumn(output_col, distance_udf(F.col(lat_col), F.col(lon_col)))
+
+def add_magnitude_feature(df, x_col="x", y_col="y", z_col="z", output_col="magnitude"):
+    """
+    Adds a column with the magnitude of the vector (distance from origin).
+    """
+    return df.withColumn(output_col, F.sqrt(F.col(x_col)**2 + F.col(y_col)**2 + F.col(z_col)**2))
