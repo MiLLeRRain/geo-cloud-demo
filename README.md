@@ -4,13 +4,15 @@ A production-style demo showcasing a distributed ETL and ML pipeline using **C# 
 
 ## Overview
 
-This project demonstrates how to build a scalable data processing pipeline where a lightweight API orchestrates heavy compute jobs.
+This project demonstrates how to build a scalable data processing pipeline where a lightweight API orchestrates heavy compute jobs. It supports two deployment modes:
+1.  **Local Dev**: Uses local Docker or Process for rapid iteration.
+2.  **Azure Cloud Native**: Uses **Azure Container Instances (ACI)** for serverless, infinite-scale compute.
 
 - **API Layer**: ASP.NET Core Minimal API (C#) handles file uploads and job management.
 - **Compute Layer**: PySpark (Python) performs ETL and KMeans clustering on point-cloud data.
 - **Architecture**: Designed to mimic a cloud-native pattern (e.g., API Gateway -> Lambda -> EMR/Databricks).
 
-See [Architecture Docs](docs/Architecture.md) for details.
+See [Architecture Docs](docs/Architecture.md) or [Learning Notes](learning/project_learning_notes.md) for details.
 
 ## Prerequisites
 
@@ -115,18 +117,90 @@ Check the `resultPath` for the processed CSV files.
   python -m geo_clustering.main --input data/sample.csv --output output/test_run
   ```
 
-## Running with Docker (Optional)
+## Deployment Modes
 
-To simulate a more production-like environment where the compute layer is containerized:
+### Mode 1: Local Docker (Simulation)
+Simulates isolation. The API spawns a local Docker container.
+1.  **Build Image**: `docker build -t geo-spark-ml:latest ./geo-spark-ml`
+2.  **Config**: Set `"UseDocker": true` in `api/appsettings.json`.
+3.  **Run**: `dotnet run` in `api/`.
 
-1.  **Build the Docker Image**:
-    ```powershell
-    cd geo-spark-ml
-    docker build -t geo-spark-ml:latest .
-    ```
+### Mode 2: Azure Cloud Native (Production)
+The full cloud architecture. The API (Web App) spawns Azure Container Instances (ACI).
 
-2.  **Enable Docker in API**:
-    Edit `api/appsettings.json` and set `"UseDocker": true`.
+**Prerequisites:**
+*   Azure Subscription & Resource Group.
+*   **ACR**: Azure Container Registry with the `geo-spark-ml` image pushed.
+*   **Managed Identity**: User Assigned Identity for the ACI worker.
 
-3.  **Run the API**:
-    Now when you submit a job, the API will spawn a Docker container instead of a local Python process. This ensures the job runs in an isolated environment with all dependencies pre-installed.
+**Configuration (`api/appsettings.json`):**
+```json
+"UseDocker": true,
+"Azure": {
+  "SubscriptionId": "...",
+  "ResourceGroup": "rg-geospark-demo",
+  "ManagedIdentityName": "id-geospark-worker",
+  "ContainerRegistry": { "LoginServer": "...", "ImageName": "..." },
+  "Storage": { "AccountName": "..." }
+}
+```
+
+**Architecture Flow:**
+1.  **Upload**: User uploads file -> Web App -> Blob Storage.
+2.  **Trigger**: Web App uses `ArmClient` to create an ACI Group (`job-guid`).
+3.  **Compute**: ACI pulls image from ACR (using Managed Identity), processes Blob data, writes results back to Blob.
+4.  **Result**: Web App generates a SAS Token for the user to download results.
+
+## Azure Resources Structure
+
+The project is deployed to a single Resource Group `rg-geospark-demo` in `Australia East`.
+
+```mermaid
+graph TD
+    User -->|HTTPS| WebApp[Azure Web App]
+    WebApp -->|Managed Identity| ACI[Azure Container Instances]
+    WebApp -->|SAS Token| Blob[Blob Storage]
+    ACI -->|Pull Image| ACR[Azure Container Registry]
+    ACI -->|Read/Write| Blob
+```
+
+### Resource Hierarchy
+
+```text
+1. 🏢 Subscription
+   ID: c3f5be8c...
+   │
+   └── 2. 📂 Resource Group
+       Name: rg-geospark-demo
+       Region: Australia East
+       │
+       │   [Azure Resources]
+       │
+       ├── 3A. 🌐 Web App
+       │       Name: geospark-webapp-lh
+       │       Url: ...azurewebsites.net
+       │
+       ├── 3B. 🏭 ACR (Container Registry)
+       │       Name: geosparkmlacr
+       │       │
+       │       └── 4. Docker Image
+       │              Tag: geo-spark-ml:latest
+       │
+       ├── 3C. 💾 Storage Account
+       │       Name: geosparkstorelh
+       │       │
+       │       └── 4. Blob Container
+       │              Name: job-data
+       │
+       └── 3D. ⚡ ACI (Worker - Dynamic)
+               Name: job-{guid}
+               (Created on demand, deleted after completion)
+```
+
+### Resource Inventory
+*   **Web App**: `geospark-webapp-lh` (The API Orchestrator)
+*   **ACR**: `geosparkmlacr` (Stores `geo-spark-ml` image)
+*   **Storage**: `geosparkstorelh` (Container: `job-data`)
+*   **Identity**: `id-geospark-worker` (User Assigned Identity for ACI)
+
+For a deep dive into the migration journey and troubleshooting, see [Project Learning Notes](learning/project_learning_notes.md).

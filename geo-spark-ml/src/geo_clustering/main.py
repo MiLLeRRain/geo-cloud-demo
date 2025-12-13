@@ -106,15 +106,13 @@ def main():
         # Drop 'features' column because CSV datasource doesn't support Vector types
         df_save = df_clustered.drop("features")
 
-        # On Windows without Hadoop/Winutils, Spark's write.csv fails.
-        if os.name == 'nt' and 'HADOOP_HOME' not in os.environ:
-            print("Windows detected without HADOOP_HOME. Saving via Pandas to avoid winutils error.")
-            os.makedirs(output_path, exist_ok=True)
-            output_file = os.path.join(output_path, "results.csv")
-            # Select all columns plus cluster
-            df_save.toPandas().to_csv(output_file, index=False)
-        else:
-            df_save.write.mode("overwrite").csv(output_path, header=True)
+        # For this demo, we always use Pandas to save a single CSV file.
+        # This avoids Spark's default behavior of creating a directory with part-files,
+        # and prevents overwriting the directory which would delete metrics.json.
+        print("Saving results via Pandas to ensure single CSV file...")
+        os.makedirs(output_path, exist_ok=True)
+        output_file = os.path.join(output_path, "results.csv")
+        df_save.toPandas().to_csv(output_file, index=False)
 
     spark.stop()
 
