@@ -1,12 +1,16 @@
 FROM python:3.9-slim
 
+# Ensure Python output is sent directly to terminal (container logs) without buffering
+ENV PYTHONUNBUFFERED=1
+
 # Install uv for faster package installation
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Install Java (required for Spark)
+# Install Java (required for Spark) - using headless and no recommends to save space
 RUN apt-get update && \
-    apt-get install -y default-jre && \
-    apt-get clean;
+    apt-get install -y --no-install-recommends default-jre-headless && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -17,11 +21,13 @@ RUN uv pip compile pyproject.toml -o requirements.txt && \
 
 COPY src/ src/
 COPY configs/ configs/
-COPY data/ data/
+COPY run_job.py .
+
+# We do NOT copy data/ to keep the image small. Data should be injected via Blob Storage.
+# COPY data/ data/
+COPY run_job.py .
 
 ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 
-# Use ENTRYPOINT so we can pass arguments (like --input, --output) to the container
-ENTRYPOINT ["python", "-m", "geo_clustering.main"]
-# Default arguments if none provided
-CMD ["--config", "configs/local.yaml"]
+# Use ENTRYPOINT to run the wrapper script
+ENTRYPOINT ["python", "run_job.py"]

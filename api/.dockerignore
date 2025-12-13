@@ -1,0 +1,8 @@
+bin/
+obj/
+outputs/
+uploads/
+.vscode/
+.git/
+.gitignore
+appsettings.Development.json
