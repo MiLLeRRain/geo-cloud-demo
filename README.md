@@ -176,9 +176,10 @@ graph TD
        │
        │   [Azure Resources]
        │
-       ├── 3A. 🌐 Web App
+       ├── 3A. 🌐 Web App (Orchestrator - Long Running)
        │       Name: geospark-webapp-lh
        │       Url: ...azurewebsites.net
+       │       (Containerized API, runs 24/7 to handle requests)
        │
        ├── 3B. 🏭 ACR (Container Registry)
        │       Name: geosparkmlacr
