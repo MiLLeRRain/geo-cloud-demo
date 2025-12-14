@@ -12,7 +12,7 @@ This project demonstrates how to build a scalable data processing pipeline where
 - **Compute Layer**: PySpark (Python) performs ETL and KMeans clustering on point-cloud data.
 - **Architecture**: Designed to mimic a cloud-native pattern (e.g., API Gateway -> Lambda -> EMR/Databricks).
 
-See [Architecture Docs](docs/Architecture.md) or [Learning Notes](learning/project_learning_notes.md) for details.
+See [Architecture Docs](docs/Architecture.md) for details.
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ cd geo-spark-ml
 # Using uv (Recommended)
 uv sync
 # OR using pip
-pip install -r requirements.txt
+pip install .
 ```
 
 ### 2. Start the API
@@ -176,9 +176,10 @@ graph TD
        │
        │   [Azure Resources]
        │
-       ├── 3A. 🌐 Web App
+       ├── 3A. 🌐 Web App (Orchestrator - Long Running)
        │       Name: geospark-webapp-lh
        │       Url: ...azurewebsites.net
+       │       (Containerized API, runs 24/7 to handle requests)
        │
        ├── 3B. 🏭 ACR (Container Registry)
        │       Name: geosparkmlacr
