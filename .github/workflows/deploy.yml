@@ -1,0 +1,51 @@
+name: Build and Deploy to ACR
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'geo-spark-ml/**'
+      - 'api/**'
+      - '.github/workflows/deploy.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_NAME: geosparkmlacr
+  RG_NAME: rg-geospark-demo
+  WEBAPP_NAME: geospark-webapp-lh
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          # You need to set up these secrets in GitHub Repo Settings
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      # Build and Push PySpark Image (Worker)
+      - name: Build and Push PySpark Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/geo-spark-ml:${{ github.sha }} -t ${{ env.ACR_NAME }}.azurecr.io/geo-spark-ml:latest ./geo-spark-ml
+          docker push ${{ env.ACR_NAME }}.azurecr.io/geo-spark-ml:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/geo-spark-ml:latest
+
+      # Build and Push API Image (Web App)
+      - name: Build and Push API Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/geo-cloud-api:${{ github.sha }} -t ${{ env.ACR_NAME }}.azurecr.io/geo-cloud-api:latest ./api
+          docker push ${{ env.ACR_NAME }}.azurecr.io/geo-cloud-api:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/geo-cloud-api:latest
+
+      # Optional: Trigger Web App Update (if Webhook is not enough)
+      # - name: Restart Web App
+      #   run: az webapp restart --name ${{ env.WEBAPP_NAME }} --resource-group ${{ env.RG_NAME }}
