@@ -21,6 +21,15 @@ See [Architecture Docs](docs/Architecture.md) for details.
 - **Java 8+**: Required for Apache Spark.
 - **uv** (Optional but recommended): For Python dependency management.
 
+## CI/CD Pipeline
+
+The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically:
+1.  **Builds** Docker images for the API and PySpark worker.
+2.  **Pushes** them to Azure Container Registry (ACR).
+3.  **Deploys** the latest code to the Azure Web App (if Continuous Deployment is enabled).
+
+**Trigger**: Push to `master`.
+
 ## Project Structure
 
 ```

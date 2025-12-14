@@ -54,7 +54,7 @@ graph LR
 |-----------------|----------------|------------------|
 | C# API          | API Gateway + Lambda | App Service / Functions |
 | Local Storage   | S3 Bucket      | ADLS Gen2 / Blob Storage |
-| PySpark Job     | EMR / Glue     | Databricks / Synapse Spark |
+| PySpark Job     | EMR / Glue     | **ACI (This Demo)** / Databricks |
 | Job Queue       | SQS            | Service Bus / Storage Queue |
 
 ## Directory Structure
